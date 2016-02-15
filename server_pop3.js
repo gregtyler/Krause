@@ -1,3 +1,4 @@
+'use strict';
 const Mailbox = require('./lib/Mailbox');
 const Backchat = require('./lib/Backchat');
 
@@ -12,11 +13,11 @@ const bc = new Backchat({
   errorCallback: ERR
 });
 
-var mailbox;
+let mailbox;
 
 function getMailbox() {
   if (typeof mailbox === 'undefined') {
-    var mb = new Mailbox('euclid');
+    const mb = new Mailbox('euclid');
     return new Promise((resolve, reject) => {
       mb.load().then(function() {
         mailbox = mb;
@@ -77,7 +78,7 @@ bc.respond('PASS', (channel, args) => {
   // Verify the password is correct
   if (args[0] === 'elephant') {
     // If it's correct, let the user in the system and enter TRANSACTION state
-    state = 'TRANSACTION';
+    channel.setState('state', 'TRANSACTION');
     channel.send(OK);
   } else {
     // If it's wrong, return an error
@@ -113,7 +114,7 @@ bc.respond('LIST', (channel, args) => {
   } else {
     // If an argument was provided, detail an individual message
     getMailbox().then((mailbox) => {
-      mail = mailbox.find(args[0]);
+      const mail = mailbox.find(args[0]);
       channel.send(OK, `${mail.id} ${mail.size}`);
     });
   }
@@ -129,7 +130,7 @@ bc.respond('RETR', (channel, args) => {
   } else {
     getMailbox().then((mailbox) => {
       // Check the mail exists and then output it
-      var mail = mailbox.find(args[0]);
+      const mail = mailbox.find(args[0]);
       if (!mail || mail.deleted) {
         channel.send(ERR, 'no such message');
       } else {
@@ -152,8 +153,7 @@ bc.respond('DELE', (channel, args) => {
   } else {
     getMailbox().then((mailbox) => {
       // Try to mark a message as deleted
-      var mail = mailbox.find(args[0]);
-
+      const mail = mailbox.find(args[0]);
 
       if (!mail) {
         channel.send(ERR, 'no such message');
@@ -180,7 +180,7 @@ bc.respond('RSET', (channel) => {
   requireInTransaction(channel);
 
   getMailbox().then((mailbox) => {
-    var rsets = 0;
+    let rsets = 0;
     // Unmark all deleted records
     mailbox.mails.forEach((mail) => {
       if (mail.deleted === true) {
@@ -219,11 +219,11 @@ bc.respond('UIDL', (channel, args) => {
   } else {
     // Provide an ID for a single message
     getMailbox().then((mailbox) => {
-      var mail = mailbox.find(args[0]);
+      const mail = mailbox.find(args[0]);
       if (!mail || mail.deleted) {
         channel.send(ERR, 'no such message');
       } else {
-        channel.send(OK, `poppoppop ${parts[1]} ${mail.hash}`)
+        channel.send(OK, `poppoppop ${mail.id} ${mail.hash}`);
       }
     });
   }
@@ -235,7 +235,7 @@ bc.respond('XTND XLST', (channel, args) => {
   requireInTransaction(channel);
 
   // Determine the header being extracted
-  var header = args[0];
+  const header = args[0];
   if (typeof header === 'undefined') {
     throw new Error('no header provided');
   }
@@ -252,7 +252,7 @@ bc.respond('XTND XLST', (channel, args) => {
     }
 
     // Extract a header from a single message
-    var mail = mailbox.find(args[0]);
+    const mail = mailbox.find(args[0]);
     if (!mail || mail.deleted) {
       channel.send(ERR, 'no such message');
     } else {
