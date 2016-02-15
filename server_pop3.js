@@ -8,8 +8,7 @@ const OK = (msg) => '+OK' + ' ' + msg;
 const ERR = (msg) => '-ERR' + ' ' + msg;
 const TERM = () => '.';
 
-const bc = new Backchat({
-  port: PORT_POP3,
+const bc = new Backchat(PORT_POP3, {
   errorCallback: ERR
 });
 
