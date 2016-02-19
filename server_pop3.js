@@ -4,7 +4,7 @@ const Backchat = require('./lib/Backchat');
 
 const PORT_POP3 = 110;
 
-const OK = (msg) => '+OK' + ' ' + msg;
+const OK = (msg) => '+OK' + ' ' + (msg || '');
 const ERR = (msg) => '-ERR' + ' ' + msg;
 const TERM = () => '.';
 
