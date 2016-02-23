@@ -1,0 +1,19 @@
+{
+  "name": "krause",
+  "version": "0.1.0",
+  "description": "An fake SMTP/POP3 server to intercept emails",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gregtyler/Krause.git"
+  },
+  "author": "Greg Tyler",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gregtyler/Krause/issues"
+  },
+  "homepage": "https://github.com/gregtyler/Krause#readme"
+}

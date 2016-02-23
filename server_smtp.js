@@ -3,7 +3,12 @@ const Backchat = require('./lib/Backchat');
 
 const PORT_SMTP = 25;
 
-const bc = new Backchat(25);
+const ERR = (msg) => '350 ' + msg;
+
+const bc = new Backchat(25, {
+  debug: true,
+  errorCallback: ERR
+});
 
 // At start, send EHLO
 bc.init(function(channel) {
@@ -21,5 +26,75 @@ bc.respond('QUIT', (channel) => {
 // Client greets the server
 bc.respond('EHLO', (channel) => {
   // Close the connection
-  channel.send('250 ' + bc.host);
+  channel.send('250 ' + bc.getHost());
 });
+
+bc.respond('AUTH', (channel, args) => {
+  // Bounce out if AUTH has already succeeded
+  if (channel.hasState('isAuthed')) {
+    channel.send('503 Already authed');
+    return;
+  }
+
+  return channel.send('235 2.7.0 Authentication successful');
+});
+
+bc.respond('MAIL', (channel, args) => {
+  // Check the message is formatted properly
+  if (args[0].substr(0, 5) !== 'FROM:') {
+    channel.send('501 5.1.7 Bad sender address syntax');
+    return;
+  }
+
+  // Create envelope and set from address
+  channel.setState('envelope', {from: args[0].substr(5)});
+
+  channel.send('250 2.1.0 Ok');
+});
+
+bc.respond('RCPT', (channel, args) => {
+  // Check a sender has been given
+  if (typeof channel.getState('envelope').from === 'undefined') {
+    channel.send('503 5.5.1 Need MAIL command first');
+    return;
+  }
+
+  // Check the message is formatted properly
+  if (args[0].substr(0, 3) !== 'TO:') {
+    channel.send('501 5.1.7 Bad recipient address syntax');
+    return;
+  }
+
+  // Set to address
+  channel.getState('envelope').to = args[0].substr(3);
+
+  channel.send('250 2.1.0 Ok');
+});
+
+bc.respond('DATA', (channel, args) => {
+  // Check a recipient has been given
+  if (typeof channel.getState('envelope').to === 'undefined') {
+    channel.send('503 5.5.1 Need RCPT command first');
+    return;
+  }
+
+  // Start data mode
+  channel.setState('STATE', 'DATA');
+
+  channel.send('354 Start sending data');
+});
+
+bc.missingResponse((channel, data) => {
+  if (channel.getState('STATE') === 'DATA') {
+    if (data === '.') {
+      channel.setState('STATE', 'LISTENING');
+      channel.send('250 2.1.0 Ok');
+    } else {
+      channel.getState('envelope').data += data;
+    }
+    return;
+  }
+});
+
+// With our responses prepared, start the server
+bc.start();
