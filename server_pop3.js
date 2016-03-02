@@ -9,6 +9,7 @@ const ERR = (msg) => '-ERR' + ' ' + msg;
 const TERM = () => '.';
 
 const bc = new Backchat(PORT_POP3, {
+  debug: true,
   errorCallback: ERR
 });
 
@@ -24,7 +25,11 @@ function getMailbox() {
       });
     });
   } else {
-    return Promise.resolve(mailbox);
+    return new Promise((resolve, reject) => {
+      mailbox.load().then(function() {
+        resolve(mailbox);
+      });
+    });
   }
 }
 
@@ -49,11 +54,13 @@ bc.respond('QUIT', (channel) => {
 
   // Delete any emails that need deleting
   getMailbox().then(() => {
-    mailbox.mails.forEach((mail) => {
+    const mails = mailbox.getMails();
+
+    for (const mail of mails) {
       if (mail.deleted) {
         mail.remove();
       }
-    });
+    }
 
     // Close the connection
     channel.close();
@@ -92,7 +99,7 @@ bc.respond('STAT', (channel) => {
 
   // Find the mailbox and get to work
   getMailbox().then((mailbox) => {
-    channel.send(OK, `${mailbox.mails.length} ${mailbox.size}`);
+    channel.send(OK, `${mailbox.getMails().length} ${mailbox.size}`);
   });
 });
 
@@ -103,11 +110,11 @@ bc.respond('LIST', (channel, args) => {
 
   if (typeof args[0] === 'undefined') {
     // If no argument provided, list all messages
-    channel.send(OK, `${mailbox.mails.length} messages (${mailbox.size} octets)`);
     getMailbox().then((mailbox) => {
-      mailbox.mails.forEach(function(mail) {
+      channel.send(OK, `${mailbox.getMails().length} messages (${mailbox.size} octets)`);
+      for (const mail of mailbox.getMails()) {
         channel.send(`${mail.id} ${mail.size}`);
-      });
+      }
       channel.send(TERM);
     });
   } else {
@@ -181,12 +188,12 @@ bc.respond('RSET', (channel) => {
   getMailbox().then((mailbox) => {
     let rsets = 0;
     // Unmark all deleted records
-    mailbox.mails.forEach((mail) => {
+    for (const mail of mailbox.getMails()) {
       if (mail.deleted === true) {
         mail.deleted = false;
         rsets++;
       }
-    });
+    }
 
     channel.send(OK, `${rsets} messages undeleted`);
   });
@@ -209,10 +216,10 @@ bc.respond('UIDL', (channel, args) => {
   if (typeof args[0] === 'undefined') {
     // If no argument provided, list all IDs
     getMailbox().then((mailbox) => {
-      channel.send(OK, `${mailbox.mails.length} messages (${mailbox.size} octets)`);
-      mailbox.mails.forEach(function(mail) {
+      channel.send(OK, `${mailbox.getMails().length} messages (${mailbox.size} octets)`);
+      for (const mail of mailbox.getMails()) {
         channel.send(`${mail.id} ${mail.hash}`);
-      });
+      }
       channel.send(TERM);
     });
   } else {
@@ -243,9 +250,9 @@ bc.respond('XTND XLST', (channel, args) => {
     // Extract the header from every message
     if (typeof args[1] === 'undefined') {
       channel.send(OK, `header list follows`);
-      mailbox.mails.forEach(function(mail) {
+      for (const mail of mailbox.getMails()) {
         channel.send(`${mail.id} ${header} ` + mail.getHeader(header));
-      });
+      }
       channel.send(TERM);
       return;
     }
@@ -260,6 +267,14 @@ bc.respond('XTND XLST', (channel, args) => {
       channel.send(TERM);
     }
   });
+});
+
+bc.missingResponse((channel, data) => {
+  if (data.trim() !== '') {
+    channel.send(ERR, `unknown command ${data}`);
+  } else {
+    return;
+  }
 });
 
 // With our responses prepared, start the server
