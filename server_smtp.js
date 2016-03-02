@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('fs');
+const notify = require('./lib/notify')
 const Backchat = require('./lib/Backchat');
 
 const PORT_SMTP = 25;
@@ -93,6 +94,9 @@ bc.missingResponse((channel, data) => {
       const subject = envelope.data.match(/\r\nSubject:\s*(.*?)\r\n/)[1].replace(/[^0-9a-zA-Z-_ ]/g, '');
       // Save message
       fs.writeFile('mail/euclid/' + subject + '-' + Date.now() + '.eml', envelope.data, 'utf-8', (err) => {
+        // Send to Slack
+        notify.send(envelope.data);
+
         if (err) throw err;
         // Return thanks
         channel.send('250 2.1.0 Ok');

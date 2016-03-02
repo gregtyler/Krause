@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/gregtyler/Krause/issues"
   },
-  "homepage": "https://github.com/gregtyler/Krause#readme"
+  "homepage": "https://github.com/gregtyler/Krause#readme",
+  "dependencies": {
+    "mailparser": "^0.5.3"
+  }
 }
