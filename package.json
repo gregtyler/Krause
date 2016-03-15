@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/gregtyler/Krause#readme",
   "dependencies": {
-    "mailparser": "^0.5.3"
+    "mailparser": "^0.5.3",
+    "request": "^2.69.0"
   }
 }
