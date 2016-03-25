@@ -21,12 +21,17 @@ bc.init(function(channel) {
 
 // Client decides to close the connection
 bc.respond('QUIT', (channel) => {
+  channel.send('221 ' + bc.getHost() + ' Goodbye!');
   // Close the connection
   channel.close();
 });
 
 // Client greets the server
 bc.respond('EHLO', (channel) => {
+  // Close the connection
+  channel.send('250 ' + bc.getHost());
+});
+bc.respond('HELO', (channel) => {
   // Close the connection
   channel.send('250 ' + bc.getHost());
 });
